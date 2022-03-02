@@ -17,7 +17,7 @@ import de.wwu.acse.rest.dto.MySum;
 public class AdderRestClient {
 	private final RestTemplate restTemplate = new RestTemplate();
 	private final String adderGetRestUrl;
-	private final String adderPostRestUrl;
+	private final URI adderPostRestURI;
 	
 	@Autowired // This constructor will be used by Spring to construct the instance
 	public AdderRestClient(
@@ -29,7 +29,12 @@ public class AdderRestClient {
 		}
 		// %d is a placeholder for ints and is replaced via String.format(...)
 		this.adderGetRestUrl = url + "add1?n1=%d&n2=%d";
-		this.adderPostRestUrl = url + "postAdd";
+		try {
+			this.adderPostRestURI = new URI(url + "postAdd");
+		} catch (URISyntaxException e) {
+			e.printStackTrace();
+			throw new IllegalStateException(e);
+		}
 	}
 	
 	public MySum addRequestWithGet(int n1, int n2) {
@@ -40,8 +45,8 @@ public class AdderRestClient {
 							new URI(String.format(adderGetRestUrl, n1, n2)), 
 							MySum.class
 					);
-				// Mapping is "dynamic", check: restTemplate.getForObject(new URI(String.format(getAdderRestUrl, n1, n2)), Map.class);
-				// Also check out @JsonIgnoreProperties!
+			// Mapping is "dynamic", check: restTemplate.getForObject(new URI(String.format(getAdderRestUrl, n1, n2)), Map.class);
+			// Also check out @JsonIgnoreProperties!
 			return result;
 		} catch (URISyntaxException | RestClientException e) {
 			e.printStackTrace();
@@ -56,12 +61,12 @@ public class AdderRestClient {
 			addRequest.setN2(n2);
 					
 			AddResponse response = restTemplate.postForObject(
-					new URI(adderPostRestUrl), 
+					adderPostRestURI, 
 					addRequest,
 					AddResponse.class);
 			
 			return response.getSum();
-		} catch (URISyntaxException | RestClientException e) {
+		} catch (RestClientException e) {
 			e.printStackTrace();
 			throw new IllegalStateException(e);
 		}
